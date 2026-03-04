@@ -309,6 +309,16 @@ function zEFW(efw,g){
 /* ===============================
    UI
 ================================ */
+function validateWeeks){
+  let v = parseInt(weeks.value);
+
+  if(isNaN(v)) return;
+  
+  if(v < 14) weeks.value = 14;
+  else if(v > 41) weeks.value = 41;
+
+  weeks.dispatchEvent(new Event("input"));
+}
 
 function paint(box,p,z){
   box.className="result";
@@ -468,6 +478,10 @@ keys.forEach(btn=>{
 nextBtn.addEventListener("click",()=>{
 
   if(!activeInput) return;
+
+  if(activeInput === weeks){
+    validateWeeks();
+  }
 
   const index=inputs.indexOf(activeInput);
 
