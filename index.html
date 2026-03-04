@@ -260,6 +260,7 @@ function sdFL(g){ return Math.exp(0.605843-42.0014*g**(-2)+0.00000917972*g**3); 
 
 function calculateEFW_Hadlock3(HC, AC, FL){
   if(!HC || !AC || !FL) return null;
+
   const HCcm = HC/10;
   const ACcm = AC/10;
   const FLcm = FL/10;
@@ -294,58 +295,51 @@ function sigmaEFW(g){
 
 function zEFW(efw,g){
   if(!isFinite(efw) || efw<=0) return NaN;
+
   const L=lambdaEFW(g);
   const M=muEFW(g);
   const S=sigmaEFW(g);
   const Y=Math.log(efw);
+
   if(Math.abs(L)<1e-6) return (Y-M)/S;
+
   return (Math.pow(Y/M,L)-1)/(L*S);
 }
 
 /* ===============================
    UI
 ================================ */
-<<<<<<< HEAD
 
 function paint(box,p,z){
   box.className="result";
+
   if(p<3) box.classList.add("red");
   else if(p<10) box.classList.add("yellow");
   else if(p>90) box.classList.add("orange");
+
   box.innerText=p+" percentile";
 }
 
-=======
-function validateWeeks(){
-  let v = parseInt(weeks.value);
-  if(isNaN(v)) return;
-  
-  if(v < 14) weeks.value = 14;
-  else if(v > 41) weeks.value = 41;
-
-  weeks.dispatchEvent(new Event("input"));
-}
-
-function paint(box,p,z){
-  box.className="result";
-  if(p<3) box.classList.add("red");
-  else if(p<10) box.classList.add("yellow");
-  else if(p>90) box.classList.add("orange");
-  box.innerText=p+" percentile";
-}
-
->>>>>>> 247e051 (fix)
 function analyze(){
 
   const w=parseInt(weeks.value);
   const d=parseInt(days.value)||0;
-  if(isNaN(w)) return;
 
-  const g=gaInWeeks(w,d);
+  let g=null;
+
+  if(!isNaN(w)){
+    g=gaInWeeks(w,d);
+  }
 
   function compute(val,meanFn,sdFn,res){
-    if(!val){res.innerText="";return;}
+
+    if(!val || !g){
+      res.innerText="";
+      return;
+    }
+
     const z=(val-meanFn(g))/sdFn(g);
+
     paint(res,percentile(z),z);
   }
 
@@ -361,52 +355,37 @@ function analyze(){
   );
 
   if(efwValue){
+
     efw.value=efwValue;
-    const z=zEFW(efwValue,g);
-    paint(efw_res,percentile(z),z);
+
+    if(g){
+
+      const z=zEFW(efwValue,g);
+
+      paint(efw_res,percentile(z),z);
+
+    }
+
   }
 
   const manual=parseFloat(efw_manual.value);
-  if(manual>0){
+
+  if(manual>0 && g){
+
     const z=zEFW(manual,g);
+
     paint(efw_manual_res,percentile(z),z);
+
   }
+
 }
 
 document.querySelectorAll("input")
-  .forEach(i=>i.addEventListener("input",analyze));
-
-weeks.addEventListener("blur",()=>{
-  let v=parseInt(weeks.value);
-  if(isNaN(v)) return;
-
-  if(v < 14) weeks.value = 14;
-  else if(v > 41) weeks.value = 41;
-
-  weeks.dispatchEvent(new Event("input")); // чтобы пересчитались percentiles
-});
-
-weeks.addEventListener("keydown", function(e){
-
-  if(e.key === "Enter"){
-
-    validateWeeks();
-
-  }
-
-});
-
-
-days.addEventListener("input",()=>{
-  let v=parseInt(days.value);
-  if(isNaN(v)) return;
-  if(v<0) days.value=0;
-  if(v>6) days.value=6;
-});
+.forEach(i=>i.addEventListener("input",analyze));
 
 
 /* ===============================
-   Keyboard Logic (stable version)
+   KEYBOARD
 ================================ */
 
 const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -423,97 +402,115 @@ if(!isMobile){
   inputs.forEach(i=>i.removeAttribute("readonly"));
 }
 
-/* ===== OPEN KEYBOARD ===== */
+function openKeyboard(input){
+
+  activeInput=input;
+
+  if(!isMobile) return;
+
+  keyboard.classList.remove("hidden");
+
+  nextBtn.innerText=(input===efw_manual)?"Done":"Next";
+
+  setTimeout(()=>{
+
+    keyboardHeight=keyboard.offsetHeight;
+
+    document.body.style.paddingBottom=keyboardHeight+40+"px";
+
+    input.scrollIntoView({
+      behavior:"smooth",
+      block:"center",
+      inline:"nearest"
+    });
+
+  },200);
+
+}
 
 inputs.forEach(input=>{
 
-  function openKeyboard(){
-
-    activeInput=input;
-    if(!isMobile) return;
-
-    keyboard.classList.remove("hidden");
-    nextBtn.innerText=(input===efw_manual)?"Done":"Next";
-
-    setTimeout(()=>{
-
-      keyboardHeight=keyboard.offsetHeight;
-
-      // добавляем пространство под страницу
-      document.body.style.paddingBottom=keyboardHeight+40+"px";
-
-      // скроллим ТОЛЬКО вертикально
-      input.scrollIntoView({
-        behavior:"smooth",
-        block:"center",
-        inline:"nearest"
-      });
-
-    },200);
-  }
-
-  input.addEventListener("focus",openKeyboard);
-  input.addEventListener("click",openKeyboard);
+  input.addEventListener("focus",()=>openKeyboard(input));
+  input.addEventListener("click",()=>openKeyboard(input));
 
 });
+
 
 /* ===== KEY INPUT ===== */
 
 keys.forEach(btn=>{
+
   btn.addEventListener("click",()=>{
+
     if(!activeInput) return;
 
     const key=btn.dataset.key;
 
     if(key==="back"){
+
       activeInput.value=activeInput.value.slice(0,-1);
+
     }else{
+
       activeInput.value+=key;
+
     }
 
     activeInput.dispatchEvent(new Event("input"));
+
   });
+
 });
+
 
 /* ===== NEXT / DONE ===== */
 
 nextBtn.addEventListener("click",()=>{
+
   if(!activeInput) return;
-<<<<<<< HEAD
-=======
-  
-  if(activeInput === weeks){
-    validateWeeks();
-  }
->>>>>>> 247e051 (fix)
 
   const index=inputs.indexOf(activeInput);
 
   if(index<inputs.length-1){
+
     inputs[index+1].focus();
+
   }else{
+
     closeKeyboard();
+
   }
+
 });
+
 
 /* ===== CLOSE ===== */
 
 function closeKeyboard(){
+
   keyboard.classList.add("hidden");
+
   document.body.style.paddingBottom="24px";
+
   activeInput=null;
+
 }
 
 document.addEventListener("click",(e)=>{
+
   if(!isMobile) return;
 
   const clickedInput=inputs.includes(e.target);
   const clickedKeyboard=keyboard.contains(e.target);
 
   if(!clickedInput && !clickedKeyboard){
+
     closeKeyboard();
+
   }
+
 });
+
 
 </script>
 </body>
